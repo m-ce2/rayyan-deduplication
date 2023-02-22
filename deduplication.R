@@ -1,13 +1,15 @@
 library(tidyverse) # https://www.tidyverse.org/
 library(synthesisr) # https://CRAN.R-project.org/package=synthesisr
 library(revtools) # https://revtools.net/
-library(data.table)
 
 data <- read.csv("articles.csv") #load the file
 output_filename <- "deduplicated.csv"
 #dim(data) #see the initial number of uploaded references
 
-data$title2 <- stringr::str_replace_all(data$title,"[:punct:]","") %>% str_replace_all(.,"[ ]+", " ") %>% tolower() # Removing all punctuation and extra white spaces
+data$title2 <- stringr::str_replace_all(data$title, "\\[.*\\]", "") %>% 
+  str_replace_all(.,"[:punct:]","") %>% 
+  str_replace_all(.,"[ ]+", " ") %>% 
+  tolower() # Removing all punctuation and extra white spaces
 
 distinct_data <- distinct(data, title2, .keep_all = TRUE) #reduce to records with unique titles (removes exact duplicates)
 
@@ -22,9 +24,9 @@ duplicates_string <- synthesisr::find_duplicates(distinct_data$title2, method = 
 #new_duplicates <- synthesisr::override_duplicates(duplicates_string, 34)
 
 unique_data <- extract_unique_references(distinct_data, duplicates_string) #extract unique references (i.e. remove fuzzy duplicates)
-dim(unique_data) #new number of unique records
+#dim(unique_data) #new number of unique records
 
-unique_data %>% select(key, title, authors, journal, issn, volume, issue, pages, year, publisher, url, abstract, doi, keywords) -> processed_data #select the key columns
+processed_data <- unique_data %>% select(key, title, authors, journal, issn, volume, issue, pages, year, publisher, url, abstract, doi, keywords) #select the key columns
 
 writeLines(toString(colnames(processed_data)), output_filename)
 write.table(processed_data, output_filename, row.names = FALSE, col.names = FALSE, append = TRUE, na = "", sep = ",", qmethod = c("double"))
